@@ -8,3 +8,5 @@
 /src/sfintegration.entities/obj
 /src/bhive.entities/bin
 /src/bhive.entities/obj
+/.vs/bhive-sfintegration2/v15/Server/sqlite3/db.lock
+/.vs/bhive-sfintegration2/v15/Server/sqlite3
