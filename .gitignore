@@ -1,0 +1,10 @@
+/src/sfintegration.timesheets.consoleapp/bin
+/src/sfintegration.timesheets.consoleapp/obj
+/src/sfintegration.salesforce.api.client/bin
+/src/sfintegration.salesforce.api.client/obj
+/src/sfintegration.infrastructure/bin
+/src/sfintegration.infrastructure/obj
+/src/sfintegration.entities/bin
+/src/sfintegration.entities/obj
+/src/bhive.entities/bin
+/src/bhive.entities/obj
