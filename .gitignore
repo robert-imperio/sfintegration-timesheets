@@ -10,3 +10,7 @@
 /src/bhive.entities/obj
 /.vs/bhive-sfintegration2/v15/Server/sqlite3/db.lock
 /.vs/bhive-sfintegration2/v15/Server/sqlite3
+/.vs/SFIntegration-TimeSheets/v15/Server/sqlite3/db.lock
+/.vs/SFIntegration-TimeSheets/v15/Server/sqlite3/storage.ide
+/.vs/SFIntegration-TimeSheets/v15/Server/sqlite3/storage.ide-shm
+/.vs/SFIntegration-TimeSheets/v15/Server/sqlite3/storage.ide-wal
