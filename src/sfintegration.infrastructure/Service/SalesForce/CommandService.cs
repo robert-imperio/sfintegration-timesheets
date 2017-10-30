@@ -42,6 +42,8 @@ namespace sfintegration.infrastructure.Service.SalesForce
                 batchInfoResultList.Add(await _forceClient.CreateJobBatchAsync(jobInfo, batch));
             }
 
+            var jonInfoResult = await _forceClient.CloseJobAsync(jobInfo); // Closing job prevents any more batches from being added.
+
             return batchInfoResultList;
         }
 
