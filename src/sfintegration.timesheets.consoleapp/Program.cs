@@ -45,70 +45,74 @@ namespace sfintegration.timesheets.consoleapp
             LogManager.Configuration.Variables["StartDate"] = startDate.ToString("yyyy-MM-dd");
             _logger.Info("Started UserTimeClock submissions to SalesForce.");
 
-            Debug.WriteLine("Reading UserTimeClocks");
+            Console.WriteLine("Reading UserTimeClocks");
             _logger.Info($"Regtrieving UserTimeClocks from Bhive for work week starting {startDate}");
             var userTimeClocks = _bhQuery.GetUserTimeClocks(startDate, endDate);
             if (userTimeClocks != null && userTimeClocks.Count() > 0)
             {
                 _logger.Info($"Staging {userTimeClocks.Count()} UserTimeClock records.");
-                Debug.WriteLine($"Writing {userTimeClocks.Count()} UserTimeClocks");
+                Console.WriteLine($"Writing {userTimeClocks.Count()} UserTimeClocks");
                 WriteUserTimeClocksToIntegrationDB(startDate, userTimeClocks);
 
-                Debug.WriteLine($"Reading SalesForce TimeSheets");
+                Console.WriteLine($"Reading SalesForce TimeSheets");
                 var salesForceTimeSheets = _sfQuery.GetTimeSheets(startDate, lastModifiedDate).GetAwaiter().GetResult();
                 WriteSalesForceTimeSheetsToIntegrationDB(salesForceTimeSheets);
 
-                Debug.WriteLine($"Reading SalesForce TimeSheetActivities");
+                Console.WriteLine($"Reading SalesForce TimeSheetActivities");
                 var salesForceTimeSheetActivities = _sfQuery.GetTimeSheetActivities(startDate, lastModifiedDate).GetAwaiter().GetResult();
                 WriteSalesForceTimeSheetActivitiesToIntegrationDB(salesForceTimeSheetActivities);
 
-                Debug.WriteLine($"Setting TimeSheet Ids");
+                Console.WriteLine($"Setting TimeSheet Ids");
                 // This sets the TimeSheetId and Status from SalesForce
                 _igCommand.UpdateUserTimeClocksFromTimeSheets(startDate);
 
-                Debug.WriteLine($"Setting TimeSheetActivity Ids");
+                Console.WriteLine($"Setting TimeSheetActivity Ids");
                 // This sets the TimeSheetActivityId 
                 _igCommand.UpateUserTimeClocksFromTimeSheetActivities(startDate);
 
-                Debug.WriteLine($"Setting Conflict flags");
+                Console.WriteLine($"Setting Conflict flags");
                 // Flag over-lapping activities between SalesForce and Bhive as conflicts
                 _igCommand.FlagConflicts(startDate);
 
-                Debug.WriteLine($"Getting TimeSheets to submit");
+                Console.WriteLine($"Getting TimeSheets to submit");
                 // Create SalesForce TimeSheet records for UserTimeClocks with no TimeSheetIds
                 // then read from SalesForce and write ids back to integration db
                 var missingTimeSheetIds = _igQuery.GetMissingTimeSheetId(startDate);
                 if (missingTimeSheetIds != null && missingTimeSheetIds.Count() > 0)
                 {
-                    Debug.WriteLine($"Submitting TimeSheets");
+                    Console.WriteLine($"Submitting TimeSheets");
                     // Submit here
                     _sfCommand.SubmitTimeSheets(missingTimeSheetIds).GetAwaiter().GetResult();
                     _logger.Info($"Submitted {missingTimeSheetIds.Count()} TimeSheet records to SalesForce");
 
-                    Debug.WriteLine($"Reading back SalesForce TimeSheets and updating local table");
+                    Console.WriteLine($"Reading back SalesForce TimeSheets and updating local table");
                     // Read back here
                     salesForceTimeSheets = _sfQuery.GetTimeSheets(startDate, lastModifiedDate).GetAwaiter().GetResult();
                     WriteSalesForceTimeSheetsToIntegrationDB(salesForceTimeSheets);
                     _igCommand.UpdateUserTimeClocksFromTimeSheets(startDate);
                 }
 
-                Debug.WriteLine($"Getting UserTimeClocksk to submit");
+                Console.WriteLine($"Getting UserTimeClocksk to submit");
                 // Submit usertimeclocks to SalesForce
                 var userTimeClocksToSubmit = _igQuery.GetUserTimeClocksToSubmit(startDate);
                 if (userTimeClocksToSubmit != null && userTimeClocksToSubmit.Count() > 0)
                 {
                     _logger.Info($"Started UserTimeClock submissions");
-                    Debug.WriteLine($"Submitting UserTimeClocks");
+                    Console.WriteLine($"Submitting UserTimeClocks");
                     // Submit here
-                    _sfCommand.SubmitUserTimeClocks(userTimeClocksToSubmit).GetAwaiter().GetResult();
-                    _igCommand.UpdateUserTimeClockSubmittedDate(userTimeClocksToSubmit);
-                    _logger.Info($"Submitted {userTimeClocksToSubmit.Count()} UserTimeClock records");
+                    var submittedUserTimeClocks = _sfCommand.SubmitUserTimeClocks(userTimeClocksToSubmit).GetAwaiter().GetResult();
+                    _igCommand.UpateTimeSheetActivityIdsAndSubmittedDate(submittedUserTimeClocks);                                        
+                    var processed = submittedUserTimeClocks.Count(m => !string.IsNullOrEmpty(m.TimeSheetActivityId));
+                    var failed = submittedUserTimeClocks.Count(m => string.IsNullOrEmpty(m.TimeSheetActivityId));
+                    _logger.Info($"Submitted {submittedUserTimeClocks.Count()} UserTimeClock records");
+                    _logger.Info($"UserTimeClocks processed: {processed}");
+                    _logger.Info($"UserTimeClocks failed: {failed}");
 
-                    Debug.WriteLine($"Reading back SalesForce TimeSheetActivities and updating local table");
-                    // Read back here
-                    salesForceTimeSheetActivities = _sfQuery.GetTimeSheetActivities(startDate, lastModifiedDate).GetAwaiter().GetResult();
-                    WriteSalesForceTimeSheetActivitiesToIntegrationDB(salesForceTimeSheetActivities);
-                    _igCommand.UpateUserTimeClocksFromTimeSheetActivities(startDate);
+                    //Console.WriteLine($"Reading back SalesForce TimeSheetActivities and updating local table");
+                    //// Read back here
+                    //salesForceTimeSheetActivities = _sfQuery.GetTimeSheetActivities(startDate, lastModifiedDate).GetAwaiter().GetResult();
+                    //WriteSalesForceTimeSheetActivitiesToIntegrationDB(salesForceTimeSheetActivities);
+                    //_igCommand.UpateUserTimeClocksFromTimeSheetActivities(startDate);
                 }
 
             }

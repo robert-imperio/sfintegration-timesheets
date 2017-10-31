@@ -26,6 +26,7 @@ namespace sfintegration.infrastructure.Service.IntegrationDB
                 return context.UserTimeClocks
                     .Where(m =>
                     m.StartDate == startDate
+                    && (m.TimeSheetId != null || m.TimeSheetId != string.Empty)
                     && m.TimeSheetActivityId == null
                     && (m.HasConflict == null || m.HasConflict == false)
                     && m.Status.ToLower() == "created - in progress"

@@ -154,5 +154,31 @@ namespace sfintegration.infrastructure.Service.IntegrationDB
                 );
             }
         }
+
+        public IEnumerable<entities.UserTimeClock> UpateTimeSheetActivityIdsAndSubmittedDate(IEnumerable<entities.UserTimeClock> userTimeClocks)
+        {
+            using (var context = new SFIntegrationContext())
+            {
+                var submittedDate = DateTime.UtcNow;
+
+                foreach (var userTimeClock in userTimeClocks)
+                {
+                    userTimeClock.SubmittedDate = submittedDate;
+                }
+
+                context.BulkMerge(userTimeClocks, options =>
+                    options.ColumnInputExpression = entity => new {
+                        entity.UserId,
+                        entity.JobOrderId,
+                        entity.ActivityId,
+                        entity.StartTime,
+                        entity.TimeSheetActivityId,
+                        entity.SubmittedDate
+                    }
+                );
+            }
+
+            return userTimeClocks;
+        }
     }
 }

@@ -47,22 +47,18 @@ namespace sfintegration.infrastructure.Service.SalesForce
             return batchInfoResultList;
         }
 
-        public async Task SubmitUserTimeClocks(IEnumerable<entities.UserTimeClock> userTimeClocks)
-        {
-            const int BatchResultsRetryMax = 3;
-
+        public async Task<IEnumerable<entities.UserTimeClock>> SubmitUserTimeClocks(IEnumerable<entities.UserTimeClock> userTimeClocks)
+        {            
             var jobInfo = await _forceClient.CreateJobAsync("BP_TimeSheet_Activity__c", BulkConstants.OperationType.Insert);
-            var batchInfos = await BatchAndSubmit_UserTimeClocks(jobInfo, userTimeClocks);
 
-            List<BatchResultList> batchResultsList = null;
-            for (var i = 0; i < BatchResultsRetryMax; i++)
-            {
-                batchResultsList = await Get_BatchSubmissionResults(batchInfos.ToList());
-                if (batchResultsList != null) { break; }
-            }
+            userTimeClocks = await BatchAndSubmit_UserTimeClocks(jobInfo, userTimeClocks);
 
-            var jobInfoResult = await _forceClient.CloseJobAsync(jobInfo); // Closing job prevents any more batches from being added.
-        }
+            // Closing job prevents any more batches from being added and
+            // allows faster reading of submission results.
+            var jobInfoResult = await _forceClient.CloseJobAsync(jobInfo);
+
+            return userTimeClocks;
+        }        
 
         private IEnumerable<IEnumerable<TimeSheet>> Batch_TimeSheets(IEnumerable<TimeSheet> timeSheets, int batchSize)
         {
@@ -91,7 +87,7 @@ namespace sfintegration.infrastructure.Service.SalesForce
             return batchList;
         }
 
-        private async Task<IEnumerable<BatchInfoResult>> BatchAndSubmit_UserTimeClocks(Salesforce.Common.Models.Xml.JobInfoResult jobInfo, IEnumerable<UserTimeClock> userTimeClocks)
+        private async Task<IEnumerable<entities.UserTimeClock>> BatchAndSubmit_UserTimeClocks(Salesforce.Common.Models.Xml.JobInfoResult jobInfo, IEnumerable<UserTimeClock> userTimeClocks)
         {
             const int batchSize = 100;
             var utcBatchList = Batch_UserTimeClocks(userTimeClocks, batchSize);
@@ -105,12 +101,41 @@ namespace sfintegration.infrastructure.Service.SalesForce
                     tsaBatch.Add(ConvertToSalesForceTimeSheetActivityRecord(utc));
                 }
 
-                var batchInfoResult = await _forceClient.CreateJobBatchAsync(jobInfo, tsaBatch); // submit batch here
+                // submit batch here
+                var batchInfoResult = await _forceClient.CreateJobBatchAsync(jobInfo, tsaBatch); 
 
                 batchInfoResultList.Add(batchInfoResult);
             }
 
-            return batchInfoResultList;
+            userTimeClocks = await SetUserTimeClockActivityIds(userTimeClocks, batchInfoResultList);
+
+            return userTimeClocks;
+        }
+
+        private async Task<IEnumerable<entities.UserTimeClock>> SetUserTimeClockActivityIds(IEnumerable<entities.UserTimeClock> userTimeClocks, IEnumerable<BatchInfoResult> batchInfos)
+        {
+            const int BatchResultsRetryMax = 3;
+
+            List<BatchResultList> batchResultsList = null;
+            for (var i = 0; i < BatchResultsRetryMax; i++)
+            {
+                batchResultsList = await Get_BatchSubmissionResults(batchInfos.ToList());
+                if (batchResultsList != null) { break; }
+            }
+
+            var timeSheetActivityIds = batchResultsList.SelectMany(m => m.Items).Select(m => m.Id).ToArray();
+            var idx = 0;
+
+            if (timeSheetActivityIds.Count() == userTimeClocks.Count())
+            {
+                foreach (var userTimeClock in userTimeClocks)
+                {
+                    userTimeClock.TimeSheetActivityId = timeSheetActivityIds[idx];
+                    idx++;
+                }
+            }
+
+            return userTimeClocks;
         }
 
         private IEnumerable<IEnumerable<UserTimeClock>> Batch_UserTimeClocks(IEnumerable<UserTimeClock> userTimeClocks, int batchSize)
