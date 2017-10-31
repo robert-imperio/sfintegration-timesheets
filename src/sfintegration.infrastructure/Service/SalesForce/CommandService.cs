@@ -51,11 +51,7 @@ namespace sfintegration.infrastructure.Service.SalesForce
         {            
             var jobInfo = await _forceClient.CreateJobAsync("BP_TimeSheet_Activity__c", BulkConstants.OperationType.Insert);
 
-            userTimeClocks = await BatchAndSubmit_UserTimeClocks(jobInfo, userTimeClocks);
-
-            // Closing job prevents any more batches from being added and
-            // allows faster reading of submission results.
-            var jobInfoResult = await _forceClient.CloseJobAsync(jobInfo);
+            userTimeClocks = await BatchAndSubmit_UserTimeClocks(jobInfo, userTimeClocks);            
 
             return userTimeClocks;
         }        
@@ -106,6 +102,10 @@ namespace sfintegration.infrastructure.Service.SalesForce
 
                 batchInfoResultList.Add(batchInfoResult);
             }
+
+            // Closing job prevents any more batches from being added and
+            // allows faster reading of submission results.
+            await _forceClient.CloseJobAsync(jobInfo);
 
             userTimeClocks = await SetUserTimeClockActivityIds(userTimeClocks, batchInfoResultList);
 

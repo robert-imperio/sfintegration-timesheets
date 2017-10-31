@@ -97,11 +97,12 @@ namespace sfintegration.timesheets.consoleapp
                 var userTimeClocksToSubmit = _igQuery.GetUserTimeClocksToSubmit(startDate);
                 if (userTimeClocksToSubmit != null && userTimeClocksToSubmit.Count() > 0)
                 {
-                    _logger.Info($"Started UserTimeClock submissions");
+                    _logger.Info($"Started submitting {userTimeClocksToSubmit.Count()} UserTimeClocks");
                     Console.WriteLine($"Submitting UserTimeClocks");
                     // Submit here
                     var submittedUserTimeClocks = _sfCommand.SubmitUserTimeClocks(userTimeClocksToSubmit).GetAwaiter().GetResult();
-                    _igCommand.UpateTimeSheetActivityIdsAndSubmittedDate(submittedUserTimeClocks);                                        
+                    _igCommand.UpateTimeSheetActivityIdsAndSubmittedDate(submittedUserTimeClocks); 
+                    
                     var processed = submittedUserTimeClocks.Count(m => !string.IsNullOrEmpty(m.TimeSheetActivityId));
                     var failed = submittedUserTimeClocks.Count(m => string.IsNullOrEmpty(m.TimeSheetActivityId));
                     _logger.Info($"Submitted {submittedUserTimeClocks.Count()} UserTimeClock records");
