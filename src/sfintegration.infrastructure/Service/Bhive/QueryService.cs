@@ -10,7 +10,7 @@ namespace sfintegration.infrastructure.Service.Bhive
 {
     public class QueryService : IQueryService
     {
-        public IEnumerable<UserTimeClock> GetUserTimeClocks(DateTime startDate, DateTime endDate)
+        public IEnumerable<UserTimeClock> GetUserTimeClocks(DateTime startDate, DateTime endDate, DateTime endTime)
         {
             const string _offShiftId = "a0h8000000DyYFwAAN";
             const string _preShiftId = "preshift";
@@ -27,6 +27,7 @@ namespace sfintegration.infrastructure.Service.Bhive
                     && m.ActivityId != _preShiftId
                     && m.ActivityId != _offShiftId
                     && m.JobOrderId != null
+                    && m.EndTime >= endTime
                     );
 
                 // Filter out any activities not lasting longer than a minute.

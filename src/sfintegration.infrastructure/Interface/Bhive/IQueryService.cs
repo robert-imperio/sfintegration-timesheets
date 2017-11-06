@@ -7,6 +7,6 @@ namespace sfintegration.infrastructure.Interface.Bhive
 {
     public interface IQueryService
     {
-        IEnumerable<UserTimeClock> GetUserTimeClocks(DateTime startDate, DateTime endDate);
+        IEnumerable<UserTimeClock> GetUserTimeClocks(DateTime startDate, DateTime endDate, DateTime startTime);
     }
 }

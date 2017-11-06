@@ -33,5 +33,16 @@ namespace sfintegration.infrastructure.Service.IntegrationDB
                     ).ToList();
             }
         }
+
+        public DateTime GetLastStagedUserTimeClockEndTime()
+        {
+            using(var context = new SFIntegrationContext())
+            {
+                return context.UserTimeClocks
+                    .Where(m => m.EndTime != null)
+                    .OrderByDescending(m => m.StartTime)
+                    .FirstOrDefault().EndTime;
+            }
+        }
     }
 }
