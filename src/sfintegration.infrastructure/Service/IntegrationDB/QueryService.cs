@@ -30,6 +30,7 @@ namespace sfintegration.infrastructure.Service.IntegrationDB
                     && m.TimeSheetActivityId == null
                     && (m.HasConflict == null || m.HasConflict == false)
                     && m.Status.ToLower() == "created - in progress"
+                    && m.UserId == "00380000026X7mRAAS"
                     ).ToList();
             }
         }

@@ -155,7 +155,7 @@ namespace sfintegration.infrastructure.Service.IntegrationDB
             }
         }
 
-        public IEnumerable<entities.UserTimeClock> UpateTimeSheetActivityIdsAndSubmittedDate(IEnumerable<entities.UserTimeClock> userTimeClocks)
+        public IEnumerable<entities.UserTimeClock> SaveUserTimeClocks(IEnumerable<entities.UserTimeClock> userTimeClocks)
         {
             using (var context = new SFIntegrationContext())
             {
@@ -173,7 +173,9 @@ namespace sfintegration.infrastructure.Service.IntegrationDB
                         entity.ActivityId,
                         entity.StartTime,
                         entity.TimeSheetActivityId,
-                        entity.SubmittedDate
+                        entity.SubmittedDate,
+                        entity.JobId,
+                        entity.BatchId
                     }
                 );
             }
