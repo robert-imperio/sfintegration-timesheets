@@ -178,6 +178,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extension\DateTimeExtension.cs" />
+    <Compile Include="Helper\BlobStorageHelper.cs" />
+    <Compile Include="Helper\CompressionHelper.cs" />
+    <Compile Include="Helper\JsonBuilder.cs" />
     <Compile Include="Helper\TimeSheetEqualityComparer.cs" />
     <Compile Include="Interface\Bhive\CommandService.cs" />
     <Compile Include="Interface\Bhive\IQueryService.cs" />

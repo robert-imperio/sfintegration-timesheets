@@ -59,7 +59,8 @@ namespace sfintegration.infrastructure.Service.SalesForce
 
                 Func<string, string> soql = lastId => $@"
                     select 
-                        Timesheet_Reference__r.Submitted_By__c, Id, 
+                        Id,
+                        Timesheet_Reference__r.Submitted_By__c,  
                         TimeSheet_Reference__c, 
                         BP_Project__c, 
                         Job_Order__c, 

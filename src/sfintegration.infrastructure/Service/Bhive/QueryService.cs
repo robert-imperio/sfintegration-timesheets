@@ -28,7 +28,6 @@ namespace sfintegration.infrastructure.Service.Bhive
                     && m.ActivityId != _offShiftId
                     && m.JobOrderId != null
                     && m.EndTime >= endTime
-                    && m.UserId == "00380000026X7mRAAS"
                     );
 
                 // Filter out any activities not lasting longer than a minute.

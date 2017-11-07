@@ -2,10 +2,12 @@
 using Salesforce.Common.Models.Xml;
 using Salesforce.Force;
 using sfintegration.entities;
+using sfintegration.infrastructure.Helper;
 using sfintegration.infrastructure.Service.IntegrationDB;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace sfintegration.infrastructure.Service.SalesForce
@@ -48,12 +50,20 @@ namespace sfintegration.infrastructure.Service.SalesForce
         }
 
         public async Task<IEnumerable<entities.UserTimeClock>> SubmitUserTimeClocks(IEnumerable<entities.UserTimeClock> userTimeClocks)
-        {            
-            var jobInfo = await _forceClient.CreateJobAsync("BP_TimeSheet_Activity__c", BulkConstants.OperationType.Insert);
+        {
+            try
+            {
+                var jobInfo = await _forceClient.CreateJobAsync("BP_TimeSheet_Activity__c", BulkConstants.OperationType.Insert);
 
-            userTimeClocks = await BatchAndSubmit_UserTimeClocks(jobInfo, userTimeClocks);            
+                userTimeClocks = await BatchAndSubmit_UserTimeClocks(jobInfo, userTimeClocks);
 
-            return userTimeClocks;
+                return userTimeClocks;
+            }
+            catch(Exception e)
+            {
+                _logger.Error(e, "Error while SubmittingUserTimeClocks.");
+                return userTimeClocks;
+            }
         }        
 
         private IEnumerable<IEnumerable<TimeSheet>> Batch_TimeSheets(IEnumerable<TimeSheet> timeSheets, int batchSize)
@@ -88,6 +98,7 @@ namespace sfintegration.infrastructure.Service.SalesForce
             const int batchSize = 100;
             var utcBatchList = Batch_UserTimeClocks(userTimeClocks, batchSize);
             var batchInfoResultList = new List<BatchInfoResult>();
+            var startDate = userTimeClocks.FirstOrDefault().StartDate;
 
             foreach (var utcBatch in utcBatchList)
             {
@@ -107,7 +118,9 @@ namespace sfintegration.infrastructure.Service.SalesForce
                 {
                     utc.JobId = jobInfo.Id;
                     utc.BatchId = batchInfoResult.Id;
-                }                
+                }
+
+                SaveSubmittedBatchToBlobStorage(startDate, batchInfoResult.Id, tsaBatch);
             }
 
             // Closing job prevents any more batches from being added and
@@ -223,12 +236,16 @@ namespace sfintegration.infrastructure.Service.SalesForce
             }
         }
 
-        private void ArchiveSubmittedBatch(string batchId, SObjectList<SObject> batchList)
+        private void SaveSubmittedBatchToBlobStorage(DateTime startDate, string batchId, SObjectList<SObject> batch)
         {
-            foreach(var obj in batchList)
-            {
-                
-            }
+            const string containerName = "salesforcetimesheets";
+
+            var jsonBuilder = new JsonBuilder<SObject>();
+            var json = jsonBuilder.JsonifyWithLineFeed(batch);
+            var gzippedStream = CompressionHelper.CompressToStream(Encoding.UTF8.GetBytes(json));
+            var key = $"{startDate.ToString("yyyy-MM-dd")}/batch-{batchId}.gzip";
+
+            BlobStorageHelper.Instance.UploadGZipStream(containerName, key, gzippedStream);            
         }
         
     }
