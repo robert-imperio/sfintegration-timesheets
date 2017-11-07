@@ -238,7 +238,7 @@ namespace sfintegration.infrastructure.Service.SalesForce
 
         private void SaveSubmittedBatchToBlobStorage(DateTime startDate, string batchId, SObjectList<SObject> batch)
         {
-            const string containerName = "salesforcetimesheets";
+            const string containerName = "sftimesheet-submissions";
 
             var jsonBuilder = new JsonBuilder<SObject>();
             var json = jsonBuilder.JsonifyWithLineFeed(batch);
