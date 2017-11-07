@@ -91,48 +91,44 @@ namespace sfintegration.infrastructure.Service.SalesForce
 
             foreach (var utcBatch in utcBatchList)
             {
+                // map bhive usertimeclock records to sales force time sheet activity records
                 var tsaBatch = new SObjectList<SObject>();
                 foreach (var utc in utcBatch)
-                {
-                    tsaBatch.Add(ConvertToSalesForceTimeSheetActivityRecord(utc));
+                {                    
+                    tsaBatch.Add(MapToSalesForceTimeSheetActivityRecord(utc));
                 }
 
                 // submit batch here
-                var batchInfoResult = await _forceClient.CreateJobBatchAsync(jobInfo, tsaBatch); 
-
+                var batchInfoResult = await _forceClient.CreateJobBatchAsync(jobInfo, tsaBatch);
                 batchInfoResultList.Add(batchInfoResult);
+
+                // Set SalesForce job id and batch id in user time clock record
+                foreach (var utc in utcBatch)
+                {
+                    utc.JobId = jobInfo.Id;
+                    utc.BatchId = batchInfoResult.Id;
+                }                
             }
 
             // Closing job prevents any more batches from being added and
             // allows faster reading of submission results.
             await _forceClient.CloseJobAsync(jobInfo);
 
-            userTimeClocks = await SetUserTimeClockActivityIds(userTimeClocks, batchInfoResultList);
+            var batchResultsList = await Get_BatchSubmissionResults(batchInfoResultList);
+            userTimeClocks = setTimeSheetActivityIdsFromSalesForce(batchResultsList, userTimeClocks);
 
             return userTimeClocks;
         }
 
-        private async Task<IEnumerable<entities.UserTimeClock>> SetUserTimeClockActivityIds(IEnumerable<entities.UserTimeClock> userTimeClocks, IEnumerable<BatchInfoResult> batchInfos)
+        private IEnumerable<UserTimeClock> setTimeSheetActivityIdsFromSalesForce(List<BatchResultList> batchResultsList, IEnumerable<UserTimeClock> userTimeClocks)
         {
-            const int BatchResultsRetryMax = 3;
-
-            List<BatchResultList> batchResultsList = null;
-            for (var i = 0; i < BatchResultsRetryMax; i++)
-            {
-                batchResultsList = await Get_BatchSubmissionResults(batchInfos.ToList());
-                if (batchResultsList != null) { break; }
-            }
-
-            var timeSheetActivityIds = batchResultsList.SelectMany(m => m.Items).Select(m => m.Id).ToArray();
+            var batchResults = batchResultsList.SelectMany(m => m.Items).ToArray();
             var idx = 0;
 
-            if (timeSheetActivityIds.Count() == userTimeClocks.Count())
+            foreach(var utc in userTimeClocks)
             {
-                foreach (var userTimeClock in userTimeClocks)
-                {
-                    userTimeClock.TimeSheetActivityId = timeSheetActivityIds[idx];
-                    idx++;
-                }
+                utc.TimeSheetActivityId = batchResults[idx].Id;
+                idx++;
             }
 
             return userTimeClocks;
@@ -165,7 +161,7 @@ namespace sfintegration.infrastructure.Service.SalesForce
             return batchList;
         }
 
-        private SObject ConvertToSalesForceTimeSheetActivityRecord(UserTimeClock utc)
+        private SObject MapToSalesForceTimeSheetActivityRecord(UserTimeClock utc)
         {
             var rec = new SObject {
                         { "Timesheet_Reference__c", $"{utc.TimeSheetId}" },
@@ -178,7 +174,7 @@ namespace sfintegration.infrastructure.Service.SalesForce
             return rec;
         }
 
-        private async Task<List<BatchResultList>> Get_BatchSubmissionResults(List<BatchInfoResult> batchInfo)
+        private async Task<List<BatchResultList>> Get_BatchSubmissionResults(List<BatchInfoResult> batchInfoList)
         {
             try
             {
@@ -186,25 +182,25 @@ namespace sfintegration.infrastructure.Service.SalesForce
                 var pollStart = 1.0f;
                 var completedList = new List<BatchInfoResult>();
 
-                while (batchInfo.Count > 0)
+                while (batchInfoList.Count > 0)
                 {
                     var removeList = new List<BatchInfoResult>();
 
-                    foreach (var bi in batchInfo)
+                    foreach (var batchInfo in batchInfoList)
                     {
-                        var newBatchInfo = await _forceClient.PollBatchAsync(bi);
+                        var newBatchInfo = await _forceClient.PollBatchAsync(batchInfo);
                         if (newBatchInfo.State.Equals(BulkConstants.BatchState.Completed.Value()) ||
                             newBatchInfo.State.Equals(BulkConstants.BatchState.Failed.Value()) ||
                             newBatchInfo.State.Equals(BulkConstants.BatchState.NotProcessed.Value()))
                         {
                             completedList.Add(newBatchInfo);
-                            removeList.Add(bi);
+                            removeList.Add(batchInfo);
                         }
                     }
 
                     foreach (var removeInfo in removeList)
                     {
-                        batchInfo.Remove(removeInfo);
+                        batchInfoList.Remove(removeInfo);
                     }
 
                     await Task.Delay((int)pollStart);
@@ -224,6 +220,14 @@ namespace sfintegration.infrastructure.Service.SalesForce
             {
                 _logger.Error(e, "Exception while getting batch submssion results from SalesForce.");
                 throw;
+            }
+        }
+
+        private void ArchiveSubmittedBatch(string batchId, SObjectList<SObject> batchList)
+        {
+            foreach(var obj in batchList)
+            {
+                
             }
         }
         

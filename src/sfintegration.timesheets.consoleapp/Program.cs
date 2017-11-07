@@ -95,7 +95,7 @@ namespace sfintegration.timesheets.consoleapp
                     _igCommand.UpdateUserTimeClocksFromTimeSheets(startDate);
                 }
               
-                Console.WriteLine($"Getting UserTimeClocksk to submit");
+                Console.WriteLine($"Getting UserTimeClocks to submit");
                 // Submit usertimeclocks to SalesForce
                 var userTimeClocksToSubmit = _igQuery.GetUserTimeClocksToSubmit(startDate);
                 if (userTimeClocksToSubmit != null && userTimeClocksToSubmit.Count() > 0)
@@ -104,7 +104,7 @@ namespace sfintegration.timesheets.consoleapp
                     Console.WriteLine($"Submitting UserTimeClocks");
                     // Submit here
                     var submittedUserTimeClocks = _sfCommand.SubmitUserTimeClocks(userTimeClocksToSubmit).GetAwaiter().GetResult();
-                    _igCommand.UpateTimeSheetActivityIdsAndSubmittedDate(submittedUserTimeClocks); 
+                    _igCommand.SaveUserTimeClocks(submittedUserTimeClocks); 
                     
                     var processed = submittedUserTimeClocks.Count(m => !string.IsNullOrEmpty(m.TimeSheetActivityId));
                     var failed = submittedUserTimeClocks.Count(m => string.IsNullOrEmpty(m.TimeSheetActivityId));

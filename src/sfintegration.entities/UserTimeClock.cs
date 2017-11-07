@@ -18,5 +18,8 @@ namespace sfintegration.entities
         public string Status { get; set; }
         public DateTime? LastUpdated { get; set; }
         public string UpdatedBy { get; set; }
+
+        public string JobId { get; set; }
+        public string BatchId { get; set; }
     }
 }
