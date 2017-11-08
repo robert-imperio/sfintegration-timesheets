@@ -61,7 +61,7 @@ namespace sfintegration.infrastructure.Service.SalesForce
             }
             catch(Exception e)
             {
-                _logger.Error(e, "Error while SubmittingUserTimeClocks.");
+                _logger.Error(e, "Error while Submitting UserTimeClocks.");
                 return userTimeClocks;
             }
         }        
