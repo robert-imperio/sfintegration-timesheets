@@ -43,7 +43,7 @@ namespace sfintegration.infrastructure.Helper
 
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(key);
             blockBlob.Properties.ContentEncoding = "gzip";
-            blockBlob.Properties.ContentType = "text/json";
+            blockBlob.Properties.ContentType = "application/octet-stream";
             blockBlob.UploadFromStream(gZippedMemoryStream);
             gZippedMemoryStream.Close();
         }
