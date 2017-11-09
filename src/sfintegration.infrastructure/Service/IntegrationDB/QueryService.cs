@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using sfintegration.infrastructure.Extension;
 
 namespace sfintegration.infrastructure.Service.IntegrationDB
 {
@@ -38,10 +39,16 @@ namespace sfintegration.infrastructure.Service.IntegrationDB
         {
             using(var context = new SFIntegrationContext())
             {
-                return context.UserTimeClocks
-                    .Where(m => m.EndTime != null)
-                    .OrderByDescending(m => m.StartTime)
-                    .FirstOrDefault().EndTime;
+                if (context.UserTimeClocks != null)
+                {
+                    return context.UserTimeClocks
+                        .Where(m => m.EndTime != null)
+                        .OrderByDescending(m => m.StartTime)
+                        .FirstOrDefault().EndTime;
+                }
+
+                // If no records staged, default to current start of work week.
+                return DateTime.UtcNow.StartOfWorkWeek();
             }
         }
     }

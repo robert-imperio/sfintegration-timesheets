@@ -10,29 +10,36 @@ namespace sfintegration.infrastructure.Service.Bhive
 {
     public class QueryService : IQueryService
     {
-        public IEnumerable<UserTimeClock> GetUserTimeClocks(DateTime startDate, DateTime endDate, DateTime endTime)
+        public IEnumerable<UserTimeClock> GetUserTimeClocks(DateTime lastEndTime)
         {
             const string _offShiftId = "a0h8000000DyYFwAAN";
             const string _preShiftId = "preshift";
 
-            using (var context =  new BhiveContext())
+            using (var context = new BhiveContext())
             {
-                var userTimeClocks = context.UserTimeClocks.Include(m => m.JobOrder)
+                var userTimeClocks = context.UserTimeClocks
+                    .Include(m => m.JobOrder)
                     .Where
                     (m =>
-                    m.UserId != ""
-                    && m.StartTime >= startDate 
-                    && m.StartTime < endDate 
-                    && m.EndTime != null
-                    && m.ActivityId != _preShiftId
-                    && m.ActivityId != _offShiftId
-                    && m.JobOrderId != null
-                    && m.EndTime >= endTime
-                    );
+                        m.UserId != ""
+                        && m.EndTime != null
+                        && m.ActivityId != _preShiftId
+                        && m.ActivityId != _offShiftId
+                        && m.JobOrderId != null
+                        && m.EndTime >= lastEndTime
+                    )
+                    .OrderBy(m => new {m.UserId, m.StartTime});
 
-                // Filter out any activities not lasting longer than a minute.
-                return userTimeClocks.ToList().Where(m => m.EndTime.Value.Subtract(m.StartTime).TotalMinutes >= 1);
+                var projects = context.Projects.ToList();
+
+                foreach (var utc in userTimeClocks)
+                {
+                    utc.TimeZoneId = projects.FirstOrDefault(m => m.Id == utc.JobOrder.ProjectId)?.TimeZoneId;
+                }
+
+                return userTimeClocks.ToList();
             }
+
         }
     }
 }

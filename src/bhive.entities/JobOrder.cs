@@ -11,5 +11,7 @@ namespace bhive.entities
         public string PositionId { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+
+        public virtual Project Project { get; set; }
     }
 }

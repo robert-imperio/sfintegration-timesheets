@@ -1,17 +1,16 @@
 ﻿using System;
 
-namespace bhive.entities
+namespace sfintegration.infrastructure.DTO
 {
-    public class UserTimeClock
+    public class UserTimeClockDto
     {
         public string UserId { get; set; }
         public string ActivityId { get; set; }
+        public string ProjectId { get; set; }
         public string JobOrderId { get; set; }
+        public DateTime StartDate { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
-
-        public virtual JobOrder JobOrder { get; set; }
-
         public string TimeZoneId { get; set; }
     }
 }

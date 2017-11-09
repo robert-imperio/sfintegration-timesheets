@@ -55,7 +55,7 @@ namespace sfintegration.infrastructure.Service.IntegrationDB
             }
         }
 
-        public void UpdateUserTimeClocksFromTimeSheets(DateTime startDate)
+        public void UpdateUserTimeClocksFromTimeSheets()
         {
             using (var context = new SFIntegrationContext())
             {
@@ -66,7 +66,7 @@ namespace sfintegration.infrastructure.Service.IntegrationDB
 	                    UserTimeClocks utc
 	                    join TimeSheets ts on utc.UserId = ts.UserId and utc.StartDate = ts.StartDate
                     where
-                        utc.StartDate = '{startDate}'
+                        utc.TimeSheetId is null
                     ".Trim();
 
                 context.Database.ExecuteNonQuery(sql);

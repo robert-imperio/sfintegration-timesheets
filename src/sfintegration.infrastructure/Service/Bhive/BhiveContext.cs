@@ -14,6 +14,8 @@ namespace sfintegration.infrastructure.Service.Bhive
         public DbSet<JobOrder> JobOrders { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<UserTimeClock> UserTimeClocks { get; set; }
+
+        public DbSet<Project> Projects { get; set; }
         #endregion
 
 
@@ -26,6 +28,7 @@ namespace sfintegration.infrastructure.Service.Bhive
             ConfigJobOrder(modelBuilder);
             ConfigUser(modelBuilder);
             ConfigUserTimeClock(modelBuilder);
+            ConfigProject(modelBuilder);
         }
 
         private void ConfigActivity(DbModelBuilder modelBuilder)
@@ -57,6 +60,15 @@ namespace sfintegration.infrastructure.Service.Bhive
 
             modelBuilder.Entity<UserTimeClock>()
                 .HasRequired(m => m.JobOrder);
+
+            modelBuilder.Entity<UserTimeClock>()
+                .Ignore(m => m.TimeZoneId);
+        }
+
+        private void ConfigProject(DbModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Project>()
+                .ToTable("bh.Projects");
         }
         #endregion
     }
